@@ -1,0 +1,8 @@
+growwapi>=1.5
+pyotp>=2.9
+python-dotenv>=1.0
+pandas>=2.2
+rich>=13.7
+flask>=3.0
+markdown>=3.6
+pygments>=2.17

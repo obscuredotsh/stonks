@@ -1,0 +1,1824 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stock Signals · Groww (real-time)</title>
+  <style>
+    :root {
+      --bg: #0b0f1a;
+      --panel: #131a2a;
+      --panel-2: #1b2438;
+      --panel-3: #222c44;
+      --border: #2a3650;
+      --text: #e6edf3;
+      --muted: #8b96ad;
+      --green: #10b981;
+      --green-soft: #052e22;
+      --green-band: #064e3b;
+      --red: #ef4444;
+      --red-soft: #2a0e10;
+      --red-band: #7f1d1d;
+      --yellow: #f59e0b;
+      --yellow-soft: #2a2210;
+      --cyan: #22d3ee;
+      --blue: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter,
+            system-ui, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 28px 20px 80px; }
+    h1, h2, h3 { margin: 0; letter-spacing: -.01em; }
+
+    /* ─── Top bar ───────────────────────────────────────────────────── */
+    .topbar { display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px; flex-wrap: wrap; gap: 12px; }
+    .brand h1 { font-size: 22px; font-weight: 700; }
+    .brand .tagline { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .nav { display: flex; align-items: center; gap: 4px; }
+    .nav a { color: var(--muted); text-decoration: none; padding: 6px 10px;
+      border-radius: 8px; font-size: 13px; }
+    .nav a:hover { color: var(--text); background: var(--panel); }
+    .nav a.active { color: var(--cyan); background: var(--panel); }
+    .stamp { font-size: 11px; color: var(--muted); margin-left: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    /* ─── First-time intro banner ──────────────────────────────────── */
+    .intro { background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px 20px; margin: 16px 0 24px; display: flex; gap: 16px;
+      align-items: flex-start; }
+    .intro-icon { font-size: 28px; line-height: 1; flex-shrink: 0; }
+    .intro-body { flex: 1; }
+    .intro-body h2 { font-size: 15px; margin-bottom: 4px; }
+    .intro-body p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .intro-body p + p { margin-top: 6px; }
+    .intro-body b { color: var(--text); font-weight: 600; }
+    .intro-dismiss { color: var(--muted); background: transparent; border: 0;
+      cursor: pointer; padding: 4px 8px; font-size: 18px; line-height: 1;
+      width: auto; flex-shrink: 0; }
+    .intro-dismiss:hover { color: var(--text); }
+
+    /* ─── Controls panel ────────────────────────────────────────────── */
+    .controls { background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+    .control-row { display: grid; gap: 14px;
+      grid-template-columns: 1fr 200px; align-items: end; }
+    .control-row label { display: block; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+      margin-bottom: 6px; }
+    .control-row label .help { color: var(--muted); font-weight: 400;
+      text-transform: none; letter-spacing: 0; margin-left: 6px; font-size: 11px; }
+    textarea, select, input[type="number"], button { background: var(--panel-2);
+      color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 12px; font: inherit; width: 100%; }
+    textarea, input[type="number"] { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    textarea { resize: vertical; min-height: 80px; }
+    button { cursor: pointer; font-weight: 600; }
+    button:hover { filter: brightness(1.1); }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+
+    .btn-primary { background: linear-gradient(180deg, #2563eb, #1d4ed8);
+      border-color: #1e40af; color: #fff; font-size: 15px; font-weight: 700;
+      padding: 12px 16px; }
+    .btn-secondary { background: var(--panel-2); border-color: var(--border);
+      color: var(--text); }
+
+    .live-row { display: grid; grid-template-columns: 1fr 90px; gap: 6px; margin-top: 8px; }
+    .live-btn { padding: 9px 10px; font-weight: 700; font-size: 13px; letter-spacing: .02em;
+      background: linear-gradient(180deg, #065f46, #064e3b); border-color: #10b981;
+      color: #d1fae5; }
+    .live-btn:hover { filter: brightness(1.1); }
+    .live-btn.live { background: linear-gradient(180deg, #7f1d1d, #5b0e0e);
+      border-color: #ef4444; color: #fee2e2; animation: livepulse 1.6s ease-in-out infinite; }
+    @keyframes livepulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, .55); }
+      50%      { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);   }
+    }
+    .live-secs { padding: 9px 6px; font-size: 12px; }
+
+    .live-pill { display: none; align-items: center; gap: 6px; padding: 4px 10px;
+      border: 1px solid #ef4444; border-radius: 999px; font-size: 11px; font-weight: 700;
+      letter-spacing: .08em; color: #fee2e2; background: #2a0e10; margin-left: 8px; }
+    .live-pill.on { display: inline-flex; }
+    .live-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
+      animation: livepulse 1.6s ease-in-out infinite; }
+
+    /* ─── Advanced options (collapsible) ───────────────────────────── */
+    .advanced { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
+    .advanced summary { cursor: pointer; list-style: none; font-size: 12px;
+      text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+      display: flex; align-items: center; gap: 8px; user-select: none; }
+    .advanced summary::-webkit-details-marker { display: none; }
+    .advanced summary::before { content: "▾"; color: var(--muted);
+      transition: transform .15s; display: inline-block; }
+    .advanced:not([open]) summary::before { transform: rotate(-90deg); }
+    .advanced-grid { display: grid; gap: 14px; margin-top: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+
+    /* ─── About-the-strategy panel ─────────────────────────────────── */
+    .about { background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; }
+    .about summary { cursor: pointer; list-style: none; font-size: 13px;
+      font-weight: 600; color: var(--text); display: flex; align-items: center;
+      gap: 8px; user-select: none; }
+    .about summary::-webkit-details-marker { display: none; }
+    .about summary::before { content: "▸"; color: var(--cyan);
+      transition: transform .15s; display: inline-block; }
+    .about[open] summary::before { transform: rotate(90deg); }
+    .about-body { margin-top: 14px; color: var(--text); font-size: 13px;
+      line-height: 1.6; }
+    .about-body p { margin: 0 0 10px; color: var(--text); }
+    .about-body p b { color: var(--text); }
+    .about-body i { color: var(--muted); font-style: italic; }
+    .about-body code { background: var(--panel-2); border: 1px solid var(--border);
+      padding: 1px 6px; border-radius: 4px; font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--cyan); }
+    .about-body h3 { font-size: 12px; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--muted); font-weight: 600;
+      margin: 18px 0 8px; }
+    .about-list { margin: 0 0 10px; padding-left: 22px; color: var(--muted); }
+    .about-list li { margin-bottom: 4px; line-height: 1.5; }
+    .about-list li b { color: var(--text); }
+    .about-table { width: 100%; border-collapse: collapse; margin: 6px 0 12px;
+      font-size: 13px; }
+    .about-table th, .about-table td { padding: 8px 10px;
+      border: 1px solid var(--border); text-align: left; vertical-align: top; }
+    .about-table th { background: var(--panel-2); color: var(--muted);
+      font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+      font-weight: 600; }
+    .about-table td:first-child { width: 70px; }
+    .about-table td:nth-child(2) { width: 220px; color: var(--cyan);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .about-note { background: var(--panel-2); border-left: 3px solid var(--cyan);
+      padding: 10px 14px; border-radius: 6px; color: var(--text); }
+
+    /* ─── Filter chips ─────────────────────────────────────────────── */
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+      cursor: pointer; user-select: none; border: 1px solid var(--border);
+      background: var(--panel); color: var(--muted); transition: all .12s; }
+    .chip:hover { color: var(--text); }
+    .chip.active { background: var(--panel-2); border-color: var(--cyan); color: var(--text); }
+    .chip-count { background: var(--panel-3); padding: 1px 7px; border-radius: 999px;
+      font-size: 11px; color: var(--muted); }
+    .chip.active .chip-count { background: var(--cyan); color: var(--bg); }
+    .chip.buy.active { border-color: var(--green); }
+    .chip.buy.active .chip-count { background: var(--green); color: #052e22; }
+    .chip.sell.active { border-color: var(--red); }
+    .chip.sell.active .chip-count { background: var(--red); color: #fff; }
+    .chip.hold.active { border-color: var(--yellow); }
+    .chip.hold.active .chip-count { background: var(--yellow); color: #2a2210; }
+    .chip.skip.active { border-color: var(--muted); }
+
+    /* ─── Summary rows are clickable to open the detail modal ─────── */
+    tbody tr[data-bucket] { cursor: pointer; }
+    tbody tr[data-bucket]:hover .row-symbol {
+      text-decoration: underline; text-decoration-color: var(--cyan);
+      text-underline-offset: 3px;
+    }
+
+    /* ─── Detail modal (card opens on row click) ───────────────────── */
+    #detailModal {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(5, 8, 16, 0.78);
+      display: none; align-items: flex-start; justify-content: center;
+      padding: 40px 20px; overflow-y: auto;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    #detailModal.open { display: flex; }
+    .modal-shell {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 14px; max-width: 560px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      position: relative; animation: modal-pop .16s ease-out;
+    }
+    @keyframes modal-pop {
+      from { transform: translateY(8px) scale(.985); opacity: 0; }
+      to   { transform: translateY(0)   scale(1);    opacity: 1; }
+    }
+    .modal-close {
+      position: absolute; top: 8px; right: 8px; z-index: 2;
+      background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255,255,255,.15);
+      color: #fff; width: 30px; height: 30px; padding: 0; border-radius: 50%;
+      font-size: 18px; line-height: 1; cursor: pointer;
+    }
+    .modal-close:hover { background: rgba(0, 0, 0, 0.7); }
+    .modal-shell .card { border: 0; border-radius: 14px; }
+    .modal-hint {
+      text-align: center; color: var(--muted); font-size: 11px; margin-top: 8px;
+    }
+
+    /* ─── Summary table: rows for stocks you already own ───────────── */
+    tbody tr.is-holding td {
+      background: linear-gradient(90deg, rgba(124, 58, 237, 0.28) 0%, rgba(124, 58, 237, 0.14) 50%, rgba(124, 58, 237, 0.04) 100%);
+      box-shadow: inset 4px 0 0 0 #a78bfa;
+    }
+    tbody tr.is-holding td:first-child { padding-left: 14px; }
+    tbody tr.is-holding:hover td {
+      background: linear-gradient(90deg, rgba(124, 58, 237, 0.38) 0%, rgba(124, 58, 237, 0.20) 50%, rgba(124, 58, 237, 0.08) 100%);
+    }
+    tbody tr.is-holding .row-symbol { color: #c4b5fd; }
+    .own-badge {
+      display: inline-block; margin-left: 6px; padding: 1px 7px;
+      background: #2a2848; color: #c4b5fd; border: 1px solid #4c3fa8;
+      border-radius: 999px; font-size: 10px; font-weight: 700;
+      letter-spacing: .04em; text-transform: uppercase; vertical-align: 2px;
+    }
+
+    /* ─── Summary table ────────────────────────────────────────────── */
+    .summary-card { background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+    .summary-head { padding: 12px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; }
+    .summary-head h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 16px; text-align: left; vertical-align: middle; }
+    thead th { background: var(--panel-2); font-size: 11px; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border);
+      font-weight: 600; }
+    tbody tr + tr td { border-top: 1px solid var(--border); }
+    tbody tr:hover td { background: var(--panel-2); }
+    td.num, th.num { text-align: right;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .row-symbol { font-weight: 700; color: var(--cyan); }
+
+    /* ─── Cards ────────────────────────────────────────────────────── */
+    .grid { display: grid; gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
+    .card { background: var(--panel); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+
+    /* Verdict band — the BIG visual statement */
+    .verdict { padding: 14px 18px; display: flex; align-items: center;
+      justify-content: space-between; gap: 10px; font-weight: 700; }
+    .verdict-text { font-size: 22px; letter-spacing: .01em; display: flex;
+      align-items: center; gap: 10px; }
+    .verdict-arrow { font-size: 28px; line-height: 1; }
+    .verdict-conf { font-size: 11px; font-weight: 600; opacity: .8;
+      text-transform: uppercase; letter-spacing: .06em; text-align: right; }
+    .v-strong-buy { background: linear-gradient(135deg, #047857, #064e3b); color: #d1fae5; }
+    .v-buy { background: linear-gradient(135deg, #065f46, #052e22); color: #a7f3d0; }
+    .v-hold { background: linear-gradient(135deg, #78350f, #451a03); color: #fcd34d; }
+    .v-sell { background: linear-gradient(135deg, #991b1b, #450a0a); color: #fecaca; }
+    .v-strong-sell { background: linear-gradient(135deg, #b91c1c, #7f1d1d); color: #fee2e2; }
+    .v-skip { background: linear-gradient(135deg, #1e293b, #0f172a); color: var(--muted); }
+
+    .card-head { padding: 12px 18px; display: flex; align-items: center;
+      justify-content: space-between; border-bottom: 1px solid var(--border); }
+    .card-head .sym { font-weight: 700; font-size: 16px; color: var(--cyan); letter-spacing: .02em; }
+    .card-head .price { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 17px; font-weight: 600; }
+    .card-head .price-time { color: var(--muted); font-size: 11px; margin-left: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    /* Trade plan — the actionable block */
+    .plan { padding: 14px 18px; }
+    .plan h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); font-weight: 600; margin-bottom: 10px; }
+    .plan-line { display: grid; grid-template-columns: 28px 1fr; gap: 12px;
+      padding: 8px 0; align-items: start; }
+    .plan-line + .plan-line { border-top: 1px dashed var(--border); }
+    .plan-icon { font-size: 20px; line-height: 1.2; }
+    .plan-headline { font-size: 14px; }
+    .plan-headline strong { color: var(--text); font-weight: 700; }
+    .plan-headline .price-tag { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 700; }
+    .plan-sub { color: var(--muted); font-size: 12px; margin-top: 3px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .plan-buy .price-tag { color: var(--cyan); }
+    .plan-stop .price-tag { color: var(--red); }
+    .plan-target .price-tag { color: var(--green); }
+    .plan-method { color: var(--muted); font-size: 11px; margin-top: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      cursor: help; border-bottom: 1px dotted transparent; }
+    .plan-method:hover { color: var(--text); border-bottom-color: var(--border); }
+    .pct-tag { display: inline-block; margin-left: 6px; padding: 1px 7px;
+      border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: .02em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; vertical-align: 1px; }
+    .pct-tag.pct-up   { background: var(--green-soft); color: var(--green); border: 1px solid #064e3b; }
+    .pct-tag.pct-down { background: var(--red-soft);   color: var(--red);   border: 1px solid #7f1d1d; }
+
+    /* Why — plain-English reasons */
+    .why { padding: 4px 18px 14px; }
+    .why-head { font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); font-weight: 600; padding: 10px 0 6px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .adx-tag { font-size: 11px; padding: 2px 8px; border-radius: 999px;
+      background: var(--panel-2); color: var(--muted); font-weight: 500;
+      letter-spacing: 0; text-transform: none; }
+    .adx-tag.strong   { background: var(--green-soft); color: var(--green); }
+    .adx-tag.medium   { background: var(--yellow-soft); color: var(--yellow); }
+    .adx-tag.weak     { background: var(--red-soft); color: var(--red); }
+    .reasons { display: grid; gap: 6px; }
+    .reason { display: grid; grid-template-columns: 18px 1fr; gap: 8px;
+      font-size: 13px; line-height: 1.45; align-items: start; padding: 4px 0; }
+    .reason .r-sym { font-weight: 700; line-height: 1.45; font-size: 14px; }
+    .reason.good .r-sym { color: var(--green); }
+    .reason.bad  .r-sym { color: var(--red); }
+    .reason.flat .r-sym { color: var(--muted); }
+    .r-tech { color: var(--muted); font-size: 11px; margin-top: 1px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    /* Card footer */
+    .card-foot { padding: 8px 18px 14px; color: var(--muted); font-size: 11px;
+      border-top: 1px solid var(--border); margin-top: auto; display: flex;
+      align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+    .score-badge { background: var(--panel-2); padding: 2px 8px; border-radius: 999px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    /* Error card */
+    .card.err { border-color: #7f1d1d; }
+    .card.err .verdict { background: var(--red-soft); color: #fca5a5; }
+
+    /* Empty state */
+    .empty { padding: 50px 30px; text-align: center; color: var(--muted);
+      border: 1px dashed var(--border); border-radius: 14px; background: var(--panel); }
+    .empty h3 { color: var(--text); font-size: 16px; margin-bottom: 8px; }
+    .empty p { margin: 4px 0; font-size: 14px; }
+
+    /* ─── Tracking panel ───────────────────────────────────────────── */
+    .tracking { background: var(--panel); border: 1px solid var(--border);
+      border-radius: 12px; margin-bottom: 22px; overflow: hidden; }
+    .tracking-head { display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--border); gap: 10px; flex-wrap: wrap; }
+    .tracking-head h2 { font-size: 14px; color: var(--text); font-weight: 700; }
+    .tracking-head .sub { color: var(--muted); font-size: 12px; font-weight: 400; }
+    .tracking-head .clear { width: auto; padding: 7px 14px; font-size: 12px;
+      background: var(--panel-2); border-color: var(--border); color: var(--muted);
+      font-weight: 500; }
+    .tracking-head .clear:hover { color: var(--text); }
+    .tr-row { display: grid;
+      grid-template-columns: 110px 70px 110px 90px 110px 110px 110px;
+      gap: 10px; padding: 10px 16px; align-items: center; font-size: 13px; }
+    /* Stacked price+pct cell: keeps every column the same width regardless
+       of how many digits the underlying price has. */
+    .tr-cell { display: flex; flex-direction: column; align-items: flex-end;
+      gap: 2px; line-height: 1.2; }
+    .tr-cell .pct { font-size: 11px; font-weight: 600;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .tr-cell .pct.up   { color: var(--green); }
+    .tr-cell .pct.down { color: var(--red); }
+    .tr-cell .pct.flat { color: var(--muted); }
+    .tr-row + .tr-row { border-top: 1px solid var(--border); }
+    .tr-row .label { font-size: 10px; text-transform: uppercase; color: var(--muted);
+      letter-spacing: .08em; font-weight: 600; }
+    .tr-row .sym { color: var(--cyan); font-weight: 700; }
+    .tr-side { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+      text-align: center; }
+    .tr-side.long  { color: var(--green); background: var(--green-soft); border: 1px solid #064e3b; }
+    .tr-side.short { color: var(--red);   background: var(--red-soft);   border: 1px solid #7f1d1d; }
+    .tr-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+    .tr-status.live   { color: var(--cyan); background: #062c3b; border: 1px solid #155e75; }
+    .tr-status.stop   { color: var(--red); background: var(--red-soft); border: 1px solid #ef4444; }
+    .tr-status.target { color: var(--green); background: var(--green-soft); border: 1px solid #10b981; }
+    .tr-row.hit-stop   { background: linear-gradient(90deg, var(--red-soft), transparent 60%); }
+    .tr-row.hit-target { background: linear-gradient(90deg, var(--green-soft), transparent 60%); }
+
+    /* ─── Section explainer (Open trades vs Summary) ───────────────── */
+    .explainer {
+      background: var(--panel); border: 1px solid var(--border);
+      border-left: 3px solid var(--cyan); border-radius: 10px;
+      padding: 10px 14px; margin: 0 0 14px;
+      font-size: 12px; color: var(--muted); line-height: 1.55;
+    }
+    .explainer b { color: var(--text); }
+    .explainer code {
+      background: var(--panel-2); padding: 1px 5px; border-radius: 4px;
+      font-size: 11px; color: var(--cyan);
+    }
+    .explainer .ex-grid {
+      display: grid; gap: 10px; grid-template-columns: 1fr 1fr;
+      margin-top: 6px;
+    }
+    .explainer .ex-cell { padding: 4px 0; }
+    .explainer .ex-cell h4 {
+      margin: 0 0 3px; font-size: 12px; color: var(--text);
+      font-weight: 700; letter-spacing: 0;
+    }
+    @media (max-width: 640px) {
+      .explainer .ex-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Footer ───────────────────────────────────────────────────── */
+    .footer { color: var(--muted); font-size: 11px; margin-top: 36px; text-align: center; }
+    .footer .warn { color: var(--yellow); }
+
+    /* ─── Loading spinner ──────────────────────────────────────────── */
+    .spin { display: inline-block; width: 13px; height: 13px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.2); border-top-color: #fff;
+      animation: spin .8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Watchlist tabs ───────────────────────────────────────────── */
+    .wl-tabs {
+      display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;
+      align-items: center;
+    }
+    .wl-tab {
+      background: #1a1830; color: #c7c4e8; border: 1px solid #2c2a48;
+      padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .wl-tab:hover { background: #221f3d; }
+    .wl-tab.active {
+      background: #7c3aed; color: #fff; border-color: #7c3aed;
+      box-shadow: 0 1px 6px rgba(124, 58, 237, 0.35);
+    }
+    .wl-tab .count {
+      background: rgba(255, 255, 255, 0.18); border-radius: 10px;
+      padding: 1px 7px; font-size: 11px; font-weight: 700;
+    }
+    .wl-tab:not(.active) .count {
+      background: #2c2a48; color: #948fbf;
+    }
+    .wl-spacer { flex: 1; }
+    .wl-meta {
+      font-size: 11px; color: #948fbf; text-align: right;
+      line-height: 1.45; max-width: 60%;
+    }
+    .wl-meta b { color: #d9d6f7; }
+    .wl-pane { display: none; }
+    .wl-pane.active { display: block; }
+    .wl-actions {
+      display: flex; gap: 8px; align-items: center; margin-top: 6px;
+      font-size: 12px; color: #948fbf;
+    }
+    .wl-actions .btn-tiny {
+      background: #2a2848; color: #d9d6f7; border: 1px solid #3a3760;
+      padding: 5px 11px; border-radius: 7px; font-size: 12px; cursor: pointer;
+      font-weight: 600;
+    }
+    .wl-actions .btn-tiny:hover { background: #34315a; }
+    .wl-actions .btn-tiny.primary { background: #1f6f48; border-color: #2a8f5e; color: #d6f7e3; }
+    .wl-actions .btn-tiny.primary:hover { background: #25814f; }
+    .wl-actions .save-status { font-size: 11px; }
+    .wl-actions .save-status.ok   { color: #38d28d; }
+    .wl-actions .save-status.err  { color: #ff6e7c; }
+    .wl-readonly-note {
+      font-size: 11px; color: #948fbf; margin-top: 4px;
+    }
+    .wl-readonly-note code {
+      background: #1a1830; padding: 1px 5px; border-radius: 4px;
+      font-size: 11px; color: #c7c4e8;
+    }
+
+    /* ─── Portfolio panel ──────────────────────────────────────────── */
+    .pf {
+      background: linear-gradient(135deg, #1c1b2e 0%, #1a1830 100%);
+      border: 1px solid #2f2d4e;
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+    }
+    .pf-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .pf-head h2 {
+      margin: 0; font-size: 17px; letter-spacing: 0.2px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .pf-head h2::before {
+      content: '💼'; font-size: 18px;
+    }
+    .pf-source {
+      font-size: 11px; color: #9d99c5; text-transform: uppercase; letter-spacing: 0.4px;
+      background: #2a2848; padding: 3px 8px; border-radius: 8px;
+    }
+    .pf-totals {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;
+    }
+    .pf-totals .pf-stat {
+      background: #161528; border: 1px solid #2c2a48; border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .pf-totals .pf-stat .label {
+      font-size: 11px; color: #948fbf; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .pf-totals .pf-stat .val {
+      font-size: 18px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums;
+    }
+    .pf-totals .pf-stat .sub {
+      font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums;
+    }
+    .pf-pnl-up   { color: #38d28d; }
+    .pf-pnl-down { color: #ff6e7c; }
+    .pf-pnl-flat { color: #c0bdde; }
+
+    .pf-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    .pf-table th, .pf-table td {
+      padding: 9px 8px; text-align: right; border-bottom: 1px solid #25234a;
+      font-size: 13px;
+    }
+    .pf-table th {
+      text-align: right; color: #948fbf; font-weight: 600; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid #322f55;
+    }
+    .pf-table th:first-child, .pf-table td:first-child { text-align: left; }
+    .pf-table tr:hover td { background: #1d1c34; }
+    .pf-table .pf-sym { font-weight: 600; color: #e4e1ff; }
+    .pf-table .pf-verdict {
+      display: inline-block; padding: 2px 8px; border-radius: 6px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+    }
+    .pf-verdict.buy   { background: #143d2a; color: #38d28d; }
+    .pf-verdict.sell  { background: #3d1a1f; color: #ff6e7c; }
+    .pf-verdict.wait  { background: #2f2c4e; color: #a9a5d3; }
+    .pf-verdict.chop  { background: #3a2e16; color: #e0b860; }
+    .pf-verdict.none  { color: #645f8a; }
+    .pf-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pf-actions .btn-link {
+      background: #2a2848; color: #d9d6f7; border: 1px solid #3a3760;
+      padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer;
+    }
+    .pf-actions .btn-link:hover { background: #34315a; }
+    .pf-empty, .pf-err {
+      padding: 14px; text-align: center; color: #948fbf; font-size: 13px;
+    }
+    .pf-banner {
+      background: #3a2e16; border: 1px solid #6b5320; border-radius: 10px;
+      padding: 11px 14px; margin-bottom: 14px; font-size: 13px; color: #f0d999;
+      line-height: 1.5;
+    }
+    .pf-banner b { color: #ffe6a8; }
+    .pf-banner-sub { margin-top: 6px; font-size: 12px; color: #d8c690; }
+    .pf-banner code {
+      background: #20180a; padding: 1px 5px; border-radius: 4px;
+      font-size: 11px; color: #ffcf8a;
+    }
+    .pf-banner a { color: #7dd3fc; }
+    .pf-err { color: #ff8a96; }
+    .pf-loading {
+      display: flex; align-items: center; gap: 8px; color: #948fbf;
+      padding: 10px 0; font-size: 13px;
+    }
+
+    /* ─── Responsive ───────────────────────────────────────────────── */
+    @media (max-width: 760px) {
+      .container { padding: 18px 14px 60px; }
+      .control-row { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .tr-row { grid-template-columns: 1fr 1fr; }
+      .tr-row > *:nth-child(n+5) { display: none; }
+      .pf-totals { grid-template-columns: repeat(2, 1fr); }
+      .pf-table th:nth-child(2), .pf-table td:nth-child(2),
+      .pf-table th:nth-child(4), .pf-table td:nth-child(4) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="brand">
+        <h1>Stock Signals
+          <span style="font-size:12px; font-weight:600; color:#fff; background:#7c3aed; padding:2px 8px; border-radius:6px; vertical-align:3px; margin-left:6px; letter-spacing:.05em;">GROWW</span>
+          <span class="live-pill" id="livePill"><span class="dot"></span>LIVE</span>
+        </h1>
+        <div class="tagline">Real-time NSE prices via Groww Trade API · educational use only</div>
+      </div>
+      <nav class="nav">
+        <a href="/" class="active">Scanner</a>
+        <a href="/docs">Help &amp; docs</a>
+        <span class="stamp" id="stamp">—</span>
+      </nav>
+    </div>
+
+    <!-- First-time intro (dismissible) -->
+    <div class="intro" id="intro">
+      <div class="intro-icon">👋</div>
+      <div class="intro-body">
+        <h2>New here? Read this once.</h2>
+        <p>This tool looks at <b>7 classical chart indicators</b> for each stock you list
+          and produces a single suggestion: <b>BUY</b>, <b>SELL</b>, <b>WAIT</b>, or
+          <b>SKIP</b> (if the market is too choppy to trust). It also gives you a clear
+          <b>entry price</b>, a <b>stop-loss</b>, and a <b>target</b>.</p>
+        <p>Set how much you're willing to <b>risk per trade</b> below — every signal will
+          tell you exactly how many shares to buy and how many rupees you could win or
+          lose. <b>Always place the stop in your broker before walking away.</b></p>
+      </div>
+      <button class="intro-dismiss" id="introDismiss" title="Hide this">×</button>
+    </div>
+
+    <!-- Your Groww portfolio (real holdings, live LTP, unrealized P&L) -->
+    <section id="portfolio" class="pf">
+      <div class="pf-head">
+        <h2>Your portfolio
+          <span class="pf-source">Groww · live</span>
+        </h2>
+        <div class="pf-actions">
+          <button class="btn-link" id="pfScanBtn" title="Load your holdings into the watchlist and run the scanner — see which positions are flashing BUY/SELL right now.">📊 Scan my holdings</button>
+          <button class="btn-link" id="pfRefreshBtn" title="Re-fetch holdings and live LTP from Groww.">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="pfBody">
+        <div class="pf-loading"><span class="spin"></span>Loading your Groww holdings…</div>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="control-row">
+        <div>
+          <label for="symbols">Momentum picks
+            <span class="help">— auto-generated from <code>universe.txt</code>; click <b>Re-screen now</b> to refresh, then <b>Scan now</b>.</span>
+          </label>
+          <textarea id="symbols" spellcheck="false" readonly></textarea>
+          <div class="wl-actions">
+            <button type="button" class="btn-tiny" id="wlReScreen" title="Re-run screener.py against universe.txt (~30 s).">↻ Re-screen now</button>
+            <span class="save-status" id="wlScreenStatus"></span>
+          </div>
+          <div class="wl-readonly-note" id="wlMeta">
+            Auto-generated by <code>screener.py</code> from <code>universe.txt</code>.
+          </div>
+        </div>
+        <div>
+          <label for="risk">Risk per trade (₹) <span class="help">— max you'll lose</span></label>
+          <input type="number" id="risk" min="100" step="100" value="1000">
+          <div class="live-row">
+            <button id="scan" class="btn-primary" type="button">Scan now</button>
+          </div>
+          <div class="live-row">
+            <button id="liveBtn" class="live-btn" type="button" title="Auto-refresh + send macOS alerts when a stop or target is hit">▶ Auto-refresh</button>
+            <select id="liveSecs" class="live-secs" title="How often to re-scan">
+              <option value="60">60s</option>
+              <option value="300" selected>5m</option>
+              <option value="900">15m</option>
+              <option value="3600">1h</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <details class="advanced">
+        <summary>Advanced options (candle interval, lookback)</summary>
+        <div class="advanced-grid">
+          <div>
+            <label for="interval">Candle interval</label>
+            <select id="interval">
+              <option value="1d" selected>1d (daily)</option>
+              <option value="1wk">1wk (weekly)</option>
+            </select>
+          </div>
+          <div>
+            <label for="period">History to fetch</label>
+            <select id="period">
+              <option value="3mo">3 months</option>
+              <option value="6mo">6 months</option>
+              <option value="1y" selected>1 year</option>
+              <option value="2y">2 years</option>
+            </select>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Your Groww portfolio (real holdings, live LTP, unrealized P&L) -->
+    <!-- About this strategy (collapsible) -->
+    <details class="about">
+      <summary>About this strategy &mdash; how entry, stop, and target are calculated</summary>
+      <div class="about-body">
+        <p><b>This is NOT a chart-pattern detector.</b>
+          It does <i>not</i> look for cup-and-handle, reverse head-and-shoulders, double bottoms,
+          flags, wedges, or Knoxville Divergence. Nothing in the code recognises a shape on the price plot.</p>
+        <p>What it actually does: it's a
+          <b>long-biased, multi-indicator consensus trend-following system</b>
+          with a <b>volatility-adaptive stop</b> and a <b>fixed 1:3 risk-reward target</b>.
+          Closest in spirit to:</p>
+        <ul class="about-list">
+          <li><b>Stan Weinstein</b> &mdash; <i>Stage Analysis</i> (only buy stocks in Stage&nbsp;2 uptrends, above the 200-day moving average) &rarr; the <code>EMA200</code> voter</li>
+          <li><b>William O'Neil</b> &mdash; <i>CAN&nbsp;SLIM</i> (breakouts on heavy volume from a base) &rarr; the <code>Vol+Break</code> voter</li>
+          <li><b>J. Welles Wilder (1978)</b> &mdash; RSI, ATR, ADX (momentum, volatility, trend-strength) &rarr; <code>RSI(14)</code> voter, <code>2&times;ATR</code> stop, <code>ADX(14)</code> gate</li>
+          <li><b>Olivier Seban / Indian retail</b> &mdash; <i>Supertrend</i> (10, 3.0) ATR-based dynamic trend filter &rarr; <code>SuperTrend</code> voter</li>
+          <li><b>Donchian / Turtle Traders</b> &mdash; 20-day breakout &rarr; the <code>Vol+Break</code> voter (combined with volume)</li>
+        </ul>
+        <p>A trade is fired only when (a)&nbsp;at least 2 of the 7 voters' net opinion is positive (or negative), AND (b)&nbsp;<code>ADX(14) &ge; 20</code> &mdash; meaning the market is actually trending, not chopping sideways.</p>
+
+        <h3>How each price in the trade plan is calculated</h3>
+        <table class="about-table">
+          <thead><tr><th>Level</th><th>Formula</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>Entry</b></td>
+              <td><code>today's daily close</code></td>
+              <td>The candle whose close fired the signal. In live trading you'd place the order at tomorrow's open and accept some slippage.</td>
+            </tr>
+            <tr>
+              <td><b>Stop</b></td>
+              <td><code>entry &minus; 2 &times; ATR(14)</code></td>
+              <td><b>Volatility-adaptive</b> &mdash; wider for choppy stocks, tighter for steady ones. ATR is the average daily true range over 14 days. <b>Not</b> a support level or chart-pattern stop.</td>
+            </tr>
+            <tr>
+              <td><b>Target</b></td>
+              <td><code>entry + 3 &times; (entry &minus; stop)</code></td>
+              <td><b>Fixed 1:3 risk-reward</b>. Exactly 3&times; the rupee distance from entry to stop. <b>Not</b> a measured-move pattern projection or Fibonacci extension.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p class="about-note">
+          <b>Tip for better results:</b> after entry, replace the fixed target with a
+          <i>Chandelier trailing stop</i> &mdash; <code>highest&nbsp;high&nbsp;since&nbsp;entry &minus; 3&times;ATR(14)</code> &mdash;
+          and ratchet it up daily. Backtests in <code>documentation.md</code> &sect;10 show that flips
+          the strategy from break-even to PF&nbsp;~30 (PF&nbsp;~4 after stress-testing 5&times; costs).
+          The UI doesn't auto-trail; you'd manage it yourself in the broker.
+        </p>
+      </div>
+    </details>
+
+    <!-- Filter chips (rendered after scan) -->
+    <div id="filters" class="filters" hidden></div>
+
+    <!-- Tracking panel (live mode) -->
+    <div id="tracking" class="tracking" hidden></div>
+
+    <!-- Explainer: how Open trades and Summary differ -->
+    <details class="explainer">
+      <summary style="cursor:pointer; color:var(--text); font-weight:600;">
+        How are <b>Open trades</b> and <b>Summary</b> different?
+      </summary>
+      <div class="ex-grid">
+        <div class="ex-cell">
+          <h4>🎯 Open trades (above)</h4>
+          A <b>memory list</b> of every BUY/SELL signal the scanner has fired
+          since you opened the page (or before — stored in your browser's
+          <code>localStorage</code>). Each row sticks around until price hits
+          its stop or target — at which point you get a macOS alert. <b>Paper
+          trades only</b> — not in your Groww account.
+        </div>
+        <div class="ex-cell">
+          <h4>📊 Summary (below)</h4>
+          The <b>raw output of the most recent scan</b>. One row per symbol
+          you scanned — including <code>WAIT</code> and <code>CHOPPY</code>
+          verdicts that never get tracked. Re-rendered every scan; previous
+          contents are thrown away.
+        </div>
+      </div>
+      <div style="margin-top:8px; font-size:11px;">
+        <b>Example:</b> Summary scans 26 symbols → shows 26 rows (BUY/SELL/WAIT/CHOPPY).
+        Of those, only the BUY/SELL signals get added to Open trades (e.g. 20 rows).
+        Open trades also keeps yesterday's signals that aren't in today's scan.
+      </div>
+    </details>
+
+    <!-- Summary table -->
+    <div id="summary"></div>
+
+    <!-- Empty state when no scan has run yet -->
+    <div id="emptyState"></div>
+
+    <!-- Detail modal: opens when you click a row in Summary -->
+    <div id="detailModal" role="dialog" aria-modal="true" aria-label="Stock detail">
+      <div class="modal-shell">
+        <button class="modal-close" id="detailClose" type="button" aria-label="Close">×</button>
+        <div id="detailBody"></div>
+        <div class="modal-hint">click outside or press <b>Esc</b> to close</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="warn">⚠️ Not financial advice.</span>
+      Groww Trade API · <b>real-time NSE prices</b> during market hours (9:15 AM – 3:30 PM IST).
+      Auto-refresh re-fetches the running daily close on your chosen cadence.
+      Always confirm signals yourself before trading.
+    </div>
+  </div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+
+    // ────────────────────────────────────────────────────────────────────
+    // Plain-English mapping for the 7 voters.
+    // Maps a vote → { sym: ✓ / ✗ / ⊘, text: headline, tech: technical detail }
+    // The technical detail is whatever analyze.py emitted; the headline is the
+    // beginner-friendly translation.
+    // ────────────────────────────────────────────────────────────────────
+    function humanReason(v) {
+      const detail = v.detail || '';
+      const flat = { sym: '⊘', cls: 'flat' };
+      const good = { sym: '✓', cls: 'good' };
+      const bad  = { sym: '✗', cls: 'bad' };
+      const tag  = (cls, text) => ({ ...cls, text, tech: detail });
+
+      switch (v.name) {
+        case 'EMA20/50':
+          if (detail.includes('golden')) return tag(good, 'Short-term trend just turned up (golden cross)');
+          if (detail.includes('death'))  return tag(bad,  'Short-term trend just turned down (death cross)');
+          if (v.score > 0) return tag(good, 'Short-term trend is up');
+          if (v.score < 0) return tag(bad,  'Short-term trend is down');
+          return tag(flat, 'No clear short-term trend');
+
+        case 'EMA200':
+          if (detail.includes('<200')) return tag(flat, 'Not enough history for long-term context');
+          if (v.score > 0) return tag(good, 'Above the 200-day average (long-term uptrend)');
+          if (v.score < 0) return tag(bad,  'Below the 200-day average (long-term downtrend)');
+          return tag(flat, 'Sitting right at the 200-day average');
+
+        case 'RSI(14)':
+          if (detail.startsWith('oversold')) return tag(good, 'Looks oversold — possible bounce');
+          if (detail.startsWith('overbought')) return tag(bad, 'Looks overbought — could pull back');
+          if (v.score > 0) return tag(good, 'Momentum bullish');
+          if (v.score < 0) return tag(bad,  'Momentum bearish');
+          return tag(flat, 'Momentum neutral');
+
+        case 'MACD':
+          if (detail.includes('bullish cross')) return tag(good, 'Momentum just turned positive');
+          if (detail.includes('bearish cross')) return tag(bad,  'Momentum just turned negative');
+          if (v.score > 0) return tag(good, 'Momentum building up');
+          if (v.score < 0) return tag(bad,  'Momentum fading down');
+          return tag(flat, 'Momentum flat');
+
+        case 'BB(20,2)':
+          if (detail.includes('breakout above')) return tag(good, 'Breaking out to new highs');
+          if (detail.includes('breakdown below')) return tag(bad,  'Breaking down to new lows');
+          if (v.score > 0) return tag(good, 'Pushing higher through the average');
+          if (v.score < 0) return tag(bad,  'Pushing lower through the average');
+          return tag(flat, 'Price inside its normal range');
+
+        case 'Vol+Break':
+          if (detail.includes('20d high')) return tag(good, 'Volume breakout — strong buying');
+          if (detail.includes('20d low'))  return tag(bad,  'Volume breakdown — strong selling');
+          if (detail.includes('up bar'))   return tag(good, 'Above-average volume on up move');
+          if (detail.includes('down bar')) return tag(bad,  'Above-average volume on down move');
+          if (detail.includes('<20'))      return tag(flat, 'Not enough history for volume check');
+          return tag(flat, 'Volume normal');
+
+        case 'SuperTrend':
+          if (detail.startsWith('flip → up'))   return tag(good, 'Supertrend just flipped bullish');
+          if (detail.startsWith('flip → down')) return tag(bad,  'Supertrend just flipped bearish');
+          if (v.score > 0) {
+            const m = detail.match(/[\d.]+/);
+            return tag(good, m ? `Supertrend says uptrend (trailing stop near ₹${m[0]})` : 'Supertrend says uptrend');
+          }
+          if (v.score < 0) {
+            const m = detail.match(/[\d.]+/);
+            return tag(bad,  m ? `Supertrend says downtrend (trailing stop near ₹${m[0]})` : 'Supertrend says downtrend');
+          }
+          return tag(flat, 'Supertrend unclear');
+
+        default:
+          if (v.score > 0) return tag(good, v.name);
+          if (v.score < 0) return tag(bad,  v.name);
+          return tag(flat, v.name);
+      }
+    }
+
+    // ─── ADX tag for "trend strength" badge in the Why header ──────────
+    function adxFromNote(note) {
+      const m = (note || '').match(/ADX\s+(\d+)/);
+      return m ? parseInt(m[1], 10) : null;
+    }
+    function adxTag(adx) {
+      if (adx == null) return '';
+      if (adx < 20)  return `<span class="adx-tag weak">trend weak · ADX ${adx}</span>`;
+      if (adx < 25)  return `<span class="adx-tag medium">trend emerging · ADX ${adx}</span>`;
+      if (adx < 40)  return `<span class="adx-tag strong">trend solid · ADX ${adx}</span>`;
+      return                `<span class="adx-tag strong">trend very strong · ADX ${adx}</span>`;
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Verdict → big colored band class + headline phrase
+    // ────────────────────────────────────────────────────────────────────
+    function verdictClass(r) {
+      if (r.entry == null && (r.label === 'BUY' || r.label === 'STRONG BUY'
+                              || r.label === 'SELL' || r.label === 'STRONG SELL')) {
+        return 'v-skip';  // actionable vote suppressed by ADX gate
+      }
+      if (r.label === 'STRONG BUY')  return 'v-strong-buy';
+      if (r.label === 'BUY')         return 'v-buy';
+      if (r.label === 'STRONG SELL') return 'v-strong-sell';
+      if (r.label === 'SELL')        return 'v-sell';
+      return 'v-hold';
+    }
+    function verdictArrow(r) {
+      if (r.entry == null && Math.abs(r.total) >= 2) return '⏸';
+      if (r.total >= 5)  return '↑↑';
+      if (r.total >= 2)  return '↑';
+      if (r.total <= -5) return '↓↓';
+      if (r.total <= -2) return '↓';
+      return '·';
+    }
+    function verdictText(r) {
+      if (r.entry == null && Math.abs(r.total) >= 2) return 'SKIP';
+      return r.label;
+    }
+    function verdictBucket(r) {
+      if (r.entry == null && Math.abs(r.total) >= 2) return 'skip';
+      if (r.total >=  2) return 'buy';
+      if (r.total <= -2) return 'sell';
+      return 'hold';
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Trade-plan rendering: rupee amounts, share counts
+    // ────────────────────────────────────────────────────────────────────
+    function getRisk() {
+      const v = parseFloat($('#risk').value);
+      return (isFinite(v) && v > 0) ? v : 1000;
+    }
+    function tradePlan(r, riskInr) {
+      if (r.entry == null) return null;
+      const side = r.total > 0 ? 'long' : 'short';
+      const perShareRisk = Math.abs(r.entry - r.stop);
+      if (perShareRisk <= 0) return null;
+      const shares = Math.floor(riskInr / perShareRisk);
+      const notional = shares * r.entry;
+      const maxLoss = shares * perShareRisk;
+      const potGain = shares * Math.abs(r.target - r.entry);
+      // % move required from entry → stop / target. Signed so the UI can show
+      // "−7.2 %" or "+21.5 %". Identical to ROI on capital deployed because
+      // notional = shares × entry and rupee P&L = shares × |Δprice|.
+      const stopPct   = ((r.stop   - r.entry) / r.entry) * 100;
+      const targetPct = ((r.target - r.entry) / r.entry) * 100;
+      return { side, shares, notional, maxLoss, potGain, stopPct, targetPct };
+    }
+
+    function fmtInr(n) {
+      if (!isFinite(n)) return '—';
+      return '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    }
+    function fmtPct(n) {
+      if (!isFinite(n)) return '—';
+      const sign = n >= 0 ? '+' : '−';
+      return sign + Math.abs(n).toFixed(1) + '%';
+    }
+    function fmtScore(n) { return (n >= 0 ? '+' : '') + n; }
+    function fmtTime(iso) {
+      try {
+        return new Date(iso).toLocaleString('en-IN',
+          { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+      } catch { return iso; }
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+      ));
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Card renderer
+    // ────────────────────────────────────────────────────────────────────
+    function renderCard(r, riskInr) {
+      if (r.error) {
+        return `
+          <div class="card err">
+            <div class="verdict v-skip">
+              <div class="verdict-text"><span class="verdict-arrow">⚠️</span>${escapeHtml(r.symbol)}</div>
+              <div class="verdict-conf">data error</div>
+            </div>
+            <div class="card-foot">${escapeHtml(r.error)}</div>
+          </div>`;
+      }
+
+      const vClass = verdictClass(r);
+      const vArrow = verdictArrow(r);
+      const vText  = verdictText(r);
+      const bucket = verdictBucket(r);
+      const totalVoters = r.votes.length;
+      const agreeing = r.votes.filter(v => (bucket === 'buy'  && v.score > 0)
+                                        || (bucket === 'sell' && v.score < 0)).length;
+
+      let confText;
+      if (bucket === 'skip')  confText = 'too choppy to trade';
+      else if (bucket === 'hold') confText = 'no clear signal';
+      else                    confText = `${agreeing} of ${totalVoters} indicators agree`;
+
+      // Trade plan block (only when actionable AND ADX cleared)
+      const plan = tradePlan(r, riskInr);
+      let planHtml = '';
+      if (plan) {
+        const buyVerb  = plan.side === 'long' ? 'Buy' : 'Short-sell';
+        const stopVerb = plan.side === 'long' ? 'falls to' : 'rises to';
+        const tgtVerb  = plan.side === 'long' ? 'reaches' : 'falls to';
+        planHtml = `
+          <div class="plan">
+            <h3>What to do</h3>
+            <div class="plan-line plan-buy">
+              <div class="plan-icon">📥</div>
+              <div>
+                <div class="plan-headline">
+                  <strong>${buyVerb} ${plan.shares.toLocaleString('en-IN')} share${plan.shares===1?'':'s'}</strong>
+                  around <span class="price-tag">₹${r.entry}</span>
+                </div>
+                <div class="plan-sub">Total cost ≈ ${fmtInr(plan.notional)}</div>
+                <div class="plan-method" title="The signal triggered on the close of the most recent daily candle. In live trading you'd place the order at tomorrow's open, accepting some slippage from the printed entry.">▸ Entry = today's daily close (the bar that fired the signal)</div>
+              </div>
+            </div>
+            <div class="plan-line plan-stop">
+              <div class="plan-icon">🛑</div>
+              <div>
+                <div class="plan-headline">
+                  <strong>Cut losses</strong> if price ${stopVerb}
+                  <span class="price-tag">₹${r.stop}</span>
+                  <span class="pct-tag pct-down">${fmtPct(plan.stopPct)}</span>
+                </div>
+                <div class="plan-sub">Max loss ≈ ${fmtInr(plan.maxLoss)} (the ₹ you set above)</div>
+                <div class="plan-method" title="Volatility-adaptive stop. ATR(14) is the average daily range over the last 14 days. Two ATRs gives roughly 2× a normal day's noise — wider for choppy stocks, tighter for steady ones. NOT a support level, NOT a chart-pattern stop.">▸ Stop = entry − 2 × ATR(14) volatility stop (Wilder)</div>
+              </div>
+            </div>
+            <div class="plan-line plan-target">
+              <div class="plan-icon">🎯</div>
+              <div>
+                <div class="plan-headline">
+                  <strong>Take profit</strong> if price ${tgtVerb}
+                  <span class="price-tag">₹${r.target}</span>
+                  <span class="pct-tag pct-up">${fmtPct(plan.targetPct)}</span>
+                </div>
+                <div class="plan-sub">Potential gain ≈ ${fmtInr(plan.potGain)} (3× your risk)</div>
+                <div class="plan-method" title="Fixed 1:3 risk-reward — exactly three times the rupee distance to the stop. NOT a chart-pattern projection (no measured move, no Fibonacci). For better results, replace this with a trailing stop after entry: see the 'About this strategy' panel.">▸ Target = entry + 3 × (entry − stop) — fixed 1:3 R:R</div>
+              </div>
+            </div>
+          </div>`;
+      } else if (bucket === 'skip') {
+        planHtml = `
+          <div class="plan">
+            <h3>What to do</h3>
+            <div class="plan-line">
+              <div class="plan-icon">⏸️</div>
+              <div>
+                <div class="plan-headline"><strong>Wait.</strong>
+                  The vote looks actionable, but the market is sideways/choppy
+                  (ADX gate). No safe entry right now.</div>
+                <div class="plan-sub">${escapeHtml(r.note)}</div>
+              </div>
+            </div>
+          </div>`;
+      } else {
+        planHtml = `
+          <div class="plan">
+            <h3>What to do</h3>
+            <div class="plan-line">
+              <div class="plan-icon">🕒</div>
+              <div>
+                <div class="plan-headline"><strong>Wait for a clearer setup.</strong>
+                  Indicators don't agree enough to take a trade.</div>
+                <div class="plan-sub">${escapeHtml(r.note)}</div>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      // Why section
+      const adx = adxFromNote(r.note);
+      const reasonsHtml = r.votes.map(v => {
+        const h = humanReason(v);
+        return `
+          <div class="reason ${h.cls}">
+            <span class="r-sym">${h.sym}</span>
+            <div>
+              <div>${escapeHtml(h.text)}</div>
+              <div class="r-tech">${escapeHtml(v.name)} · ${escapeHtml(h.tech)}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      const lastTime = fmtTime(r.last_time);
+
+      return `
+        <div class="card" data-bucket="${bucket}">
+          <div class="verdict ${vClass}">
+            <div class="verdict-text">
+              <span class="verdict-arrow">${vArrow}</span>${escapeHtml(vText)}
+            </div>
+            <div class="verdict-conf">${confText}</div>
+          </div>
+          <div class="card-head">
+            <div>
+              <span class="sym">${escapeHtml(r.symbol)}</span>
+              <span class="price-time">as of ${lastTime}</span>
+            </div>
+            <div class="price">₹${r.last_price.toFixed(2)}</div>
+          </div>
+          ${planHtml}
+          <div class="why">
+            <div class="why-head">
+              <span>Why this signal?</span>
+              ${adxTag(adx)}
+            </div>
+            <div class="reasons">${reasonsHtml}</div>
+          </div>
+          <div class="card-foot">
+            <span>Score <span class="score-badge">${fmtScore(r.total)}</span> from ${totalVoters} indicators</span>
+            <span>${escapeHtml(r.symbol)}.NS</span>
+          </div>
+        </div>`;
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Summary table + filter chips
+    // ────────────────────────────────────────────────────────────────────
+    function summaryHtml(rows, riskInr) {
+      const ok  = rows.filter(r => !r.error);
+      const bad = rows.filter(r =>  r.error);
+
+      // Source breakdown for the header: how many of the scanned symbols
+      // are also Groww holdings vs in the momentum_picks file.
+      const holdingsSet = new Set((pfRows || []).map(r => r.symbol));
+      const momentumSet = new Set(WL.momentum || []);
+      let nHold = 0, nMom = 0, nOther = 0;
+      for (const r of rows) {
+        const base = (r.symbol || '').replace(/\.NS$/i, '');
+        if (holdingsSet.has(base))     nHold++;
+        else if (momentumSet.has(base)) nMom++;
+        else                            nOther++;
+      }
+      const breakdownBits = [];
+      if (nHold)  breakdownBits.push(`<b>${nHold}</b> holding${nHold===1?'':'s'}`);
+      if (nMom)   breakdownBits.push(`<b>${nMom}</b> momentum pick${nMom===1?'':'s'}`);
+      if (nOther) breakdownBits.push(`<b>${nOther}</b> other`);
+      const breakdown = breakdownBits.length
+        ? `<span style="font-weight:400; color:var(--muted); font-size:11px; text-transform:none; letter-spacing:0; margin-left:8px;">· ${breakdownBits.join(' + ')}</span>`
+        : '';
+
+      // Total-failure fallback: when every symbol errored we previously
+      // returned ''; the section then visually disappeared which looked
+      // like a bug ("Scan my holdings makes Summary vanish"). Render an
+      // explicit error card so the user can see WHY nothing scanned.
+      if (!ok.length) {
+        const list = bad.slice(0, 12)
+          .map(r => `<code>${escapeHtml(r.symbol)}</code>`).join(', ');
+        const more = bad.length > 12 ? ` … +${bad.length - 12} more` : '';
+        return `
+          <div class="summary-card">
+            <div class="summary-head">
+              <h2>Summary (0 of ${rows.length} scanned ok)${breakdown}</h2>
+            </div>
+            <div style="padding:14px 16px; color:var(--muted); font-size:13px;">
+              All ${rows.length} symbol${rows.length===1?'':'s'} failed to fetch.
+              ${bad.length ? `Errored: ${list}${more}.` : ''}
+              <br><span style="font-size:11px;">Common cause: illiquid/delisted ticker, or the Groww universe map doesn't know that symbol.</span>
+            </div>
+          </div>`;
+      }
+
+      const lines = ok.map(r => {
+        const bucket = verdictBucket(r);
+        const vClass = verdictClass(r);
+        const vText  = verdictText(r);
+        const plan = tradePlan(r, riskInr);
+        const planSummary = plan
+          ? `<span class="mono">${plan.shares}×₹${r.entry} → ${fmtInr(plan.notional)}</span>`
+          : (bucket === 'skip' ? '<span style="color:var(--muted)">choppy market — skip</span>'
+                               : '<span style="color:var(--muted)">—</span>');
+        const stopCell = plan
+          ? `₹${r.stop} <span class="pct-tag pct-down">${fmtPct(plan.stopPct)}</span>`
+          : '—';
+        const targetCell = plan
+          ? `₹${r.target} <span class="pct-tag pct-up">${fmtPct(plan.targetPct)}</span>`
+          : '—';
+        // Is this symbol one of your real Groww holdings? If so we tint the
+        // row purple and slap an "OWNED" badge next to the ticker.
+        const base = (r.symbol || '').replace(/\.NS$/i, '');
+        const isHolding = holdingsSet.has(base);
+        const ownBadge = isHolding
+          ? `<span class="own-badge" title="You hold this stock in your Groww account. See the Portfolio panel above for qty/P&L.">💼 owned</span>`
+          : '';
+        return `
+          <tr data-bucket="${bucket}" class="${isHolding ? 'is-holding' : ''}">
+            <td><span class="row-symbol">${escapeHtml(r.symbol)}</span>${ownBadge}</td>
+            <td class="num">₹${r.last_price.toFixed(2)}</td>
+            <td><span class="verdict ${vClass}" style="display:inline-block; padding:3px 10px; border-radius:6px; font-size:11px;">${escapeHtml(vText)}</span></td>
+            <td>${planSummary}</td>
+            <td class="num">${stopCell}</td>
+            <td class="num">${targetCell}</td>
+          </tr>`;
+      }).join('');
+      return `
+        <div class="summary-card">
+          <div class="summary-head">
+            <h2>Summary (${ok.length} stock${ok.length===1?'':'s'} scanned)${breakdown}</h2>
+          </div>
+          <table>
+            <thead><tr>
+              <th>Symbol</th><th class="num">Now</th>
+              <th>Verdict</th><th>Plan @ your risk</th>
+              <th class="num">Stop</th><th class="num">Target</th>
+            </tr></thead>
+            <tbody>${lines}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function renderFilters(rows) {
+      const ok = rows.filter(r => !r.error);
+      if (!ok.length) { $('#filters').hidden = true; return; }
+      const counts = { all: ok.length, buy: 0, sell: 0, hold: 0, skip: 0 };
+      ok.forEach(r => { counts[verdictBucket(r)]++; });
+      const chip = (id, label, kind) => `
+        <button class="chip ${kind} ${id===currentFilter?'active':''}" data-filter="${id}" type="button">
+          ${label} <span class="chip-count">${counts[id]||0}</span>
+        </button>`;
+      $('#filters').hidden = false;
+      $('#filters').innerHTML = [
+        chip('all',  'All',        ''),
+        chip('buy',  '🟢 Buy',     'buy'),
+        chip('sell', '🔴 Sell',    'sell'),
+        chip('hold', '⚪ Wait',    'hold'),
+        chip('skip', '⏸ Choppy',   'skip'),
+      ].join('');
+      $('#filters').querySelectorAll('.chip').forEach(el => {
+        el.addEventListener('click', () => {
+          currentFilter = el.dataset.filter;
+          applyFilter();
+          renderFilters(lastRows);
+        });
+      });
+    }
+
+    function applyFilter() {
+      const f = currentFilter;
+      document.querySelectorAll('#summary tbody tr').forEach(el => {
+        el.style.display = (f === 'all' || el.dataset.bucket === f) ? '' : 'none';
+      });
+    }
+
+    let currentFilter = 'all';
+    let lastRows = [];
+
+    function render(rows) {
+      lastRows = rows;
+      const riskInr = getRisk();
+      $('#summary').innerHTML = summaryHtml(rows, riskInr);
+      // Empty state lives in its own slot above the (always-mounted) modal,
+      // because Summary itself never disappears for "0 results" anymore.
+      $('#emptyState').innerHTML = rows.length ? '' : `
+        <div class="empty">
+          <h3>No symbols yet</h3>
+          <p>Add some NSE tickers above (e.g. <b>RELIANCE</b>, <b>TCS</b>, <b>BHEL</b>)
+          and click <b>Scan now</b>.</p>
+        </div>`;
+      // If the detail modal is currently open, refresh its content so a
+      // running auto-refresh keeps the open card up to date.
+      const openSym = $('#detailModal').dataset.symbol;
+      if ($('#detailModal').classList.contains('open') && openSym) {
+        const row = rows.find(r => r.symbol === openSym);
+        if (row) $('#detailBody').innerHTML = renderCard(row, riskInr);
+      }
+      renderFilters(rows);
+      applyFilter();
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Detail modal — opens the full card for a single stock on row click
+    // ────────────────────────────────────────────────────────────────────
+    function openDetail(symbol) {
+      const row = lastRows.find(r => r.symbol === symbol);
+      if (!row) return;
+      $('#detailBody').innerHTML = renderCard(row, getRisk());
+      const m = $('#detailModal');
+      m.classList.add('open');
+      m.dataset.symbol = symbol;
+      document.body.style.overflow = 'hidden';
+    }
+    function closeDetail() {
+      const m = $('#detailModal');
+      m.classList.remove('open');
+      delete m.dataset.symbol;
+      document.body.style.overflow = '';
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Tracked positions (persisted in localStorage; preserves identifier
+    // 'stocks.tracked.v1' so existing users don't lose state)
+    // ────────────────────────────────────────────────────────────────────
+    const TRACK_KEY = 'stocks.tracked.v1';
+    let tracked = new Map();
+
+    function loadTracked() {
+      try {
+        const raw = localStorage.getItem(TRACK_KEY);
+        if (!raw) return;
+        for (const [k, v] of Object.entries(JSON.parse(raw))) tracked.set(k, v);
+      } catch {}
+    }
+    function saveTracked() {
+      const obj = Object.fromEntries(tracked);
+      try { localStorage.setItem(TRACK_KEY, JSON.stringify(obj)); } catch {}
+    }
+    function clearTracked() {
+      tracked.clear();
+      saveTracked();
+      renderTracking();
+    }
+
+    async function fireNotify(title, message, subtitle) {
+      try {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, message, subtitle }),
+        });
+      } catch {}
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, { body: (subtitle ? subtitle + '\n' : '') + message });
+        }
+      } catch {}
+    }
+
+    function maybeTrack(r) {
+      if (!r || r.error || r.entry == null) return;
+      if (tracked.has(r.symbol)) return;
+      const side = r.total > 0 ? 'long' : 'short';
+      tracked.set(r.symbol, {
+        symbol: r.symbol, side,
+        entry: r.entry, stop: r.stop, target: r.target,
+        score: r.total, label: r.label,
+        firstSeen: new Date().toISOString(),
+        lastPrice: r.last_price,
+        status: 'live',
+        // Single-source watchlist mode: everything comes from momentum picks.
+        wlSource: 'momentum',
+      });
+    }
+
+    function checkLevels(scanRows) {
+      const prices = new Map();
+      for (const r of scanRows) if (!r.error) prices.set(r.symbol, r.last_price);
+      for (const t of tracked.values()) {
+        if (t.status !== 'live') continue;
+        const p = prices.get(t.symbol);
+        if (p == null) continue;
+        t.lastPrice = p;
+
+        let hit = null;
+        if (t.side === 'long') {
+          if (p <= t.stop)        hit = 'stop';
+          else if (p >= t.target) hit = 'target';
+        } else {
+          if (p >= t.stop)        hit = 'stop';
+          else if (p <= t.target) hit = 'target';
+        }
+        if (hit) {
+          t.status = hit;
+          const isTarget = hit === 'target';
+          const arrow = isTarget ? '🎯' : '🛑';
+          const verb = isTarget ? 'TARGET HIT' : 'STOP HIT';
+          fireNotify(
+            `${arrow} ${t.symbol} — ${verb}`,
+            `Side ${t.side.toUpperCase()} · entry ${t.entry} · ${isTarget ? 'target' : 'stop'} ${isTarget ? t.target : t.stop}\nNow ₹${p.toFixed(2)}`,
+            `${t.label} · score ${fmtScore(t.score)}`,
+          );
+        }
+      }
+      saveTracked();
+    }
+
+    function renderTracking() {
+      const el = $('#tracking');
+      if (tracked.size === 0) { el.hidden = true; el.innerHTML = ''; return; }
+      el.hidden = false;
+      const rows = [...tracked.values()].sort((a, b) => {
+        const order = { live: 0, target: 1, stop: 2 };
+        return (order[a.status] - order[b.status]) || a.symbol.localeCompare(b.symbol);
+      });
+
+      const title = `${rows.length} open trade${rows.length === 1 ? '' : 's'} from <span style="color:#a78bfa;">Momentum picks</span>`;
+
+      el.innerHTML = `
+        <div class="tracking-head">
+          <div>
+            <h2>${title}</h2>
+            <div class="sub">
+              <b>OPEN</b> = price is still between stop and target.
+              Each scan re-checks; when price hits your stop or target you get a macOS alert.
+              <br>Prices are <b>real-time</b> from Groww during market hours (9:15&nbsp;AM&nbsp;–&nbsp;3:30&nbsp;PM&nbsp;IST) and the previous close after hours. Levels use the running daily close — set real stops in your broker.
+            </div>
+          </div>
+          <button class="clear" id="clearTracking" type="button">Clear all</button>
+        </div>
+        <div class="tr-row" style="background: var(--panel-2);">
+          <span class="label">Symbol</span>
+          <span class="label">Side</span>
+          <span class="label">Status</span>
+          <span class="label num" style="text-align:right;">Entry</span>
+          <span class="label num" style="text-align:right;">Stop</span>
+          <span class="label num" style="text-align:right;">Target</span>
+          <span class="label num" style="text-align:right;">Now</span>
+        </div>
+        ${rows.map(t => {
+          const klass = t.status === 'stop' ? 'hit-stop'
+                      : t.status === 'target' ? 'hit-target' : '';
+          // Status semantics:
+          //   live   → trade is open, price is still between stop and target
+          //   target → profit-target hit (exit at gain)
+          //   stop   → stop-loss hit (exit at loss)
+          // 'OPEN' is the trader-vocabulary version of 'live' and reads more
+          // clearly than the previous 'WATCHING'.
+          const statusBadge = t.status === 'live'
+            ? '<span class="tr-status live" title="Trade is open: latest price is still between your stop and target. Neither has been hit yet.">OPEN</span>'
+            : t.status === 'target'
+              ? '<span class="tr-status target" title="Profit target reached. Exit at gain (alert was sent to your macOS notifications).">🎯 TARGET HIT</span>'
+              : '<span class="tr-status stop" title="Stop-loss reached. Exit at loss (alert was sent to your macOS notifications).">🛑 STOP HIT</span>';
+          // Live P&L %: current price vs entry, signed so longs/shorts both
+          // show "+" when in profit. Skipped when basically flat to avoid
+          // noisy "±0.0 %" pills on rows that were just tracked.
+          const livePct = t.lastPrice && t.entry
+            ? ((t.lastPrice - t.entry) / t.entry) * 100 * (t.side === 'long' ? 1 : -1)
+            : null;
+          const liveShow = livePct != null && Math.abs(livePct) >= 0.05;
+          const liveCls  = !liveShow ? 'flat' : (livePct >= 0 ? 'up' : 'down');
+          const livePctHtml = liveShow
+            ? `<span class="pct ${liveCls}">${fmtPct(livePct)}</span>`
+            : '';
+          const stopPct   = ((t.stop   - t.entry) / t.entry) * 100;
+          const targetPct = ((t.target - t.entry) / t.entry) * 100;
+          return `
+            <div class="tr-row ${klass}">
+              <span class="sym">${escapeHtml(t.symbol)}</span>
+              <span class="tr-side ${t.side}">${t.side === 'long' ? 'BUY' : 'SHORT'}</span>
+              ${statusBadge}
+              <span class="tr-cell mono">
+                <span>₹${t.entry}</span>
+              </span>
+              <span class="tr-cell mono">
+                <span style="color:var(--red)">₹${t.stop}</span>
+                <span class="pct down">${fmtPct(stopPct)}</span>
+              </span>
+              <span class="tr-cell mono">
+                <span style="color:var(--green)">₹${t.target}</span>
+                <span class="pct up">${fmtPct(targetPct)}</span>
+              </span>
+              <span class="tr-cell mono">
+                <span>₹${(t.lastPrice ?? 0).toFixed(2)}</span>
+                ${livePctHtml}
+              </span>
+            </div>`;
+        }).join('')}
+      `;
+      $('#clearTracking').addEventListener('click', clearTracked);
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Scan + auto-refresh
+    // ────────────────────────────────────────────────────────────────────
+    async function scan() {
+      const btn = $('#scan');
+      btn.disabled = true;
+      const orig = btn.textContent;
+      btn.innerHTML = '<span class="spin"></span>Scanning…';
+      const symbols = getActiveSymbols();
+      try {
+        const r = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            symbols,
+            interval: $('#interval').value,
+            period: $('#period').value,
+          }),
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const rows = await r.json();
+        render(rows);
+        rows.forEach(maybeTrack);
+        checkLevels(rows);
+        renderTracking();
+        $('#stamp').textContent = 'last scan ' + new Date().toLocaleTimeString();
+        document.dispatchEvent(new CustomEvent('scanComplete', { detail: { rows } }));
+      } catch (e) {
+        $('#stamp').textContent = 'error: ' + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    }
+
+    let liveTimer = null;
+    function setLive(on) {
+      const btn = $('#liveBtn');
+      const pill = $('#livePill');
+      if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
+      if (on) {
+        const secs = parseInt($('#liveSecs').value, 10) || 60;
+        btn.classList.add('live');
+        btn.textContent = '⏸ Pause';
+        pill.classList.add('on');
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission().catch(() => {});
+        }
+        liveTimer = setInterval(scan, secs * 1000);
+        scan();
+      } else {
+        btn.classList.remove('live');
+        btn.textContent = '▶ Auto-refresh';
+        pill.classList.remove('on');
+      }
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Intro banner: dismiss state persists per browser
+    // ────────────────────────────────────────────────────────────────────
+    function initIntro() {
+      if (localStorage.getItem('stocks.intro.dismissed.v1') === '1') {
+        $('#intro').style.display = 'none';
+      }
+      $('#introDismiss').addEventListener('click', () => {
+        localStorage.setItem('stocks.intro.dismissed.v1', '1');
+        $('#intro').style.display = 'none';
+      });
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Watchlist (single source: momentum picks)
+    // ────────────────────────────────────────────────────────────────────
+    const WL = {
+      momentum: [],
+      meta: {},
+    };
+
+    function parseSymbolsFromText(txt) {
+      return txt.split(/[\n,]/)
+        .map(s => s.split('#')[0].trim().toUpperCase().replace(/\.NS$/, ''))
+        .filter(Boolean);
+    }
+
+    function getActiveSymbols() {
+      return parseSymbolsFromText($('#symbols').value);
+    }
+
+    function updateWlMeta() {
+      const first = (WL.meta.header || '').split('\n').filter(Boolean).slice(0, 2).join(' · ');
+      $('#wlMeta').innerHTML = first || 'Run <code>screener.py</code> to populate.';
+    }
+
+    async function loadWatchlists() {
+      try {
+        const r = await fetch('/api/watchlists');
+        const d = await r.json();
+        WL.momentum = d.momentum.symbols || [];
+        WL.meta = d.momentum.meta || {};
+        $('#symbols').value = WL.momentum.join('\n');
+        updateWlMeta();
+      } catch (e) {
+        $('#wlMeta').innerHTML = `<span style="color:#ff8a96;">Couldn't load watchlist: ${escapeHtml(e.message)}</span>`;
+      }
+    }
+
+    async function rescreenMomentum() {
+      const st = $('#wlScreenStatus');
+      const btn = $('#wlReScreen');
+      st.textContent = 'Running screener… this can take up to ~60 s';
+      st.className = 'save-status';
+      btn.disabled = true;
+      try {
+        const r = await fetch('/api/rescreen', { method: 'POST' });
+        const d = await r.json();
+        if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+        WL.momentum = d.symbols || [];
+        WL.meta = d.meta || {};
+        $('#symbols').value = WL.momentum.join('\n');
+        updateWlMeta();
+        st.textContent = `Refreshed ${WL.momentum.length} picks ✓`;
+        st.className = 'save-status ok';
+      } catch (e) {
+        st.textContent = 'Error: ' + e.message;
+        st.className = 'save-status err';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Your Groww portfolio (real holdings)
+    // ────────────────────────────────────────────────────────────────────
+    let pfRows = [];           // raw rows from /api/portfolio
+    let pfTotals = null;
+    let pfLiveData = true;      // false when Groww live-quote feed is unavailable
+    let pfQuoteError = null;    // raw error string from the quote endpoint
+
+    function pfPnlClass(n) {
+      if (n == null || !isFinite(n)) return 'pf-pnl-flat';
+      if (n > 0) return 'pf-pnl-up';
+      if (n < 0) return 'pf-pnl-down';
+      return 'pf-pnl-flat';
+    }
+
+    function fmtInr2(n) {
+      // 2-dp INR with commas; for portfolio per-row prices where precision matters.
+      if (n == null || !isFinite(n)) return '—';
+      return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Map a scan row's label → portfolio verdict tag (BUY / SELL / WAIT / CHOPPY).
+    function pfVerdictFor(symbol) {
+      if (!lastRows || !lastRows.length) return null;
+      // Scan symbols look like "RELIANCE.NS"; Groww symbols are "RELIANCE".
+      const row = lastRows.find(r => {
+        const base = (r.symbol || '').replace(/\.NS$/i, '');
+        return base === symbol;
+      });
+      if (!row) return null;
+      const lbl = (row.label || '').toLowerCase();
+      if (lbl.includes('buy'))   return { cls: 'buy',  text: 'BUY' };
+      if (lbl.includes('sell'))  return { cls: 'sell', text: 'SELL' };
+      if (lbl.includes('chop'))  return { cls: 'chop', text: 'CHOPPY' };
+      if (lbl.includes('wait'))  return { cls: 'wait', text: 'WAIT' };
+      return { cls: 'wait', text: row.label || '—' };
+    }
+
+    function renderPortfolio() {
+      const body = $('#pfBody');
+      if (!pfRows.length) {
+        body.innerHTML = `<div class="pf-empty">No NSE equity holdings found in this Groww account.</div>`;
+        return;
+      }
+      const t = pfTotals || {};
+      const pnlCls = pfPnlClass(t.pnl_abs);
+
+      const totalsHtml = `
+        <div class="pf-totals">
+          <div class="pf-stat">
+            <div class="label">Invested</div>
+            <div class="val">${fmtInr2(t.invested)}</div>
+            <div class="sub" style="color:#948fbf;">${t.count} holding${t.count === 1 ? '' : 's'}</div>
+          </div>
+          <div class="pf-stat">
+            <div class="label">Current value</div>
+            <div class="val">${fmtInr2(t.current_value)}</div>
+            <div class="sub" style="color:#948fbf;">live LTP @ ${new Date().toLocaleTimeString()}</div>
+          </div>
+          <div class="pf-stat">
+            <div class="label">Unrealized P&amp;L</div>
+            <div class="val ${pnlCls}">${(t.pnl_abs >= 0 ? '+' : '') + fmtInr2(t.pnl_abs).replace('₹', '₹')}</div>
+            <div class="sub ${pnlCls}">${fmtPct(t.pnl_pct)}</div>
+          </div>
+          <div class="pf-stat">
+            <div class="label">Best · Worst</div>
+            <div class="val" style="font-size: 14px; line-height: 1.4;">
+              ${(() => {
+                const sorted = [...pfRows].filter(r => r.pnl_pct != null)
+                  .sort((a, b) => b.pnl_pct - a.pnl_pct);
+                if (!sorted.length) return '—';
+                const best = sorted[0];
+                const worst = sorted[sorted.length - 1];
+                return `<span class="pf-pnl-up">${escapeHtml(best.symbol)} ${fmtPct(best.pnl_pct)}</span><br>
+                        <span class="pf-pnl-down">${escapeHtml(worst.symbol)} ${fmtPct(worst.pnl_pct)}</span>`;
+              })()}
+            </div>
+          </div>
+        </div>
+      `;
+
+      const rowsHtml = pfRows.map(r => {
+        const cls = pfPnlClass(r.pnl_abs);
+        const verdict = pfVerdictFor(r.symbol);
+        const vHtml = verdict
+          ? `<span class="pf-verdict ${verdict.cls}">${verdict.text}</span>`
+          : `<span class="pf-verdict none" title="Not in the latest scan. Click 'Scan my holdings' to see signals for this stock.">—</span>`;
+        const qtyStr = Number.isInteger(r.quantity) ? r.quantity : r.quantity.toFixed(2);
+        return `
+          <tr>
+            <td class="pf-sym">${escapeHtml(r.symbol)}</td>
+            <td>${qtyStr}</td>
+            <td>${fmtInr2(r.avg_price)}</td>
+            <td>${r.ltp != null ? fmtInr2(r.ltp) : '—'}</td>
+            <td>${fmtInr2(r.invested)}</td>
+            <td>${r.current_value != null ? fmtInr2(r.current_value) : '—'}</td>
+            <td class="${cls}">${r.pnl_abs != null ? (r.pnl_abs >= 0 ? '+' : '') + fmtInr2(r.pnl_abs) : '—'}</td>
+            <td class="${cls}">${fmtPct(r.pnl_pct)}</td>
+            <td>${vHtml}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const liveBanner = pfLiveData ? '' : `
+        <div class="pf-banner">
+          <b>⚠️ Live prices unavailable.</b>
+          Your Groww holdings loaded fine, but the <b>market-data feed is blocked</b>
+          for this API key — so <b>LTP, current value, and P&amp;L can't be shown</b>.
+          <div class="pf-banner-sub">
+            Groww returned: <code>${escapeHtml(pfQuoteError || 'Access forbidden for this request')}</code>.
+            This usually means the <b>"Live Data" subscription</b> on your Groww Trade-API
+            key has lapsed or isn't enabled. Enable it at
+            <a href="https://groww.in/user/profile/trading-apis" target="_blank" rel="noopener">groww.in → Trading APIs</a>,
+            then click <b>↻ Refresh</b>. (Invested amounts below are from your holdings and are still accurate.)
+          </div>
+        </div>`;
+
+      body.innerHTML = `
+        ${liveBanner}
+        ${totalsHtml}
+        <div style="overflow-x:auto;">
+          <table class="pf-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Qty</th>
+                <th>Avg</th>
+                <th>LTP</th>
+                <th>Invested</th>
+                <th>Current</th>
+                <th>P&amp;L (₹)</th>
+                <th>P&amp;L (%)</th>
+                <th>Signal</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    async function loadPortfolio() {
+      const body = $('#pfBody');
+      body.innerHTML = `<div class="pf-loading"><span class="spin"></span>Loading your Groww holdings…</div>`;
+      try {
+        const r = await fetch('/api/portfolio');
+        const d = await r.json();
+        if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+        pfRows      = d.rows || [];
+        pfTotals    = d.totals || null;
+        pfLiveData  = d.live_data !== false;
+        pfQuoteError = d.quote_error || null;
+        renderPortfolio();
+        // If a scan already completed before the portfolio finished loading
+        // (race on initial page load), re-render the Summary so the owned
+        // rows get the purple highlight retroactively.
+        if (lastRows.length) render(lastRows);
+      } catch (e) {
+        body.innerHTML = `<div class="pf-err">Couldn't load portfolio: ${escapeHtml(e.message)}<br>
+          <span style="color:#948fbf;font-size:12px;">Check that GROWW_API_KEY / GROWW_API_SECRET in <code>.env</code> are valid and not expired.</span></div>`;
+      }
+    }
+
+    function scanMyHoldings() {
+      if (!pfRows.length) return;
+      // MERGE holdings with whatever is already in the scan list (deduped).
+      // This way the Summary keeps showing momentum picks AND now adds your
+      // holdings — instead of replacing one with the other.
+      const current  = parseSymbolsFromText($('#symbols').value);
+      const holdings = pfRows.map(r => r.symbol);
+      const merged   = Array.from(new Set([...current, ...holdings]));
+      const added    = merged.length - current.length;
+      $('#symbols').value = merged.join('\n');
+      $('#wlScreenStatus').textContent = added > 0
+        ? `Added ${added} holding${added === 1 ? '' : 's'} to the scan (${merged.length} total).`
+        : `All ${holdings.length} holdings were already in the list (${merged.length} total).`;
+      $('#wlScreenStatus').className = 'save-status ok';
+      scan();
+      $('#symbols').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ────────────────────────────────────────────────────────────────────
+    // Bindings
+    // ────────────────────────────────────────────────────────────────────
+    initIntro();
+    loadTracked();
+    renderTracking();
+
+    // Watchlist controls
+    $('#wlReScreen').addEventListener('click', rescreenMomentum);
+
+    $('#scan').addEventListener('click', scan);
+    $('#liveBtn').addEventListener('click', () => setLive(!liveTimer));
+    $('#liveSecs').addEventListener('change', () => { if (liveTimer) setLive(true); });
+    $('#risk').addEventListener('input', () => {
+      if (lastRows.length) render(lastRows);
+    });
+    $('#pfRefreshBtn').addEventListener('click', loadPortfolio);
+    $('#pfScanBtn').addEventListener('click', scanMyHoldings);
+
+    // Detail modal: row click opens the card; backdrop/Esc/X closes it.
+    // Delegating on #summary (which stays mounted) so we don't have to
+    // re-bind every time summaryHtml() re-renders the table.
+    $('#summary').addEventListener('click', (e) => {
+      const tr = e.target.closest('tr[data-bucket]');
+      if (!tr) return;
+      const symEl = tr.querySelector('.row-symbol');
+      if (!symEl) return;
+      openDetail(symEl.textContent.trim());
+    });
+    $('#detailClose').addEventListener('click', closeDetail);
+    $('#detailModal').addEventListener('click', (e) => {
+      // Click on the dark backdrop (but not inside the white card) closes.
+      if (e.target.id === 'detailModal') closeDetail();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && $('#detailModal').classList.contains('open')) {
+        closeDetail();
+      }
+    });
+
+    // Re-render the portfolio whenever the watchlist scan finishes, so the
+    // 'Signal' column picks up the freshest BUY/SELL/WAIT/CHOPPY verdict.
+    document.addEventListener('scanComplete', () => {
+      if (pfRows.length) renderPortfolio();
+    });
+
+    // Load watchlists BEFORE the first scan so scan() has symbols to send.
+    (async () => {
+      await loadWatchlists();
+      loadPortfolio();
+      scan();
+    })();
+  </script>
+</body>
+</html>
